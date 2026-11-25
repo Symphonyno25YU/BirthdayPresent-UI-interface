@@ -12,6 +12,7 @@ let activity = '';
 let wins = '';
 let wish = '';
 let wishSent = false;
+let reportOpen = false;
 let animationDone = false;
 let animationTimer = 0;
 const wishKey = 'xixi-birthday-wish-v1';
@@ -20,7 +21,7 @@ const number = (s        ) => '<b class="num">' + s + '</b>';
 const title = (s        ) => '<h2>' + s + '</h2>';
 const para = (s        ) => '<p>' + s + '</p>';
 function delayed(lines          ) {
-  return lines.map((line,i) => '<div class="reveal" style="--delay:' + (2*i) + 's">' + line + '</div>').join('');
+  return lines.map((line,i) => '<div class="reveal" style="--delay:' + (0.45 * i) + 's">' + line + '</div>').join('');
 }
 function form(content        , button = '确定') {
   return '<form id="answer">' + content + '<button class="primary">' + button + '</button><span id="message" class="msg" role="status"></span></form>';
@@ -41,7 +42,9 @@ function content() {
     case 6: return title('哇塞，这都可以猜对吗？') + para('对！我们吃鸡了' + number('385') + '次！');
     case 7: return title('哈哈，猜的很接近了，') + para('我们吃鸡了' + number('385') + '次！');
     case 8: return title('每一次吃鸡，我们都在海岛不同的地方，') + para('每一个地方都有不同的回忆！') + '<div class="photos">' + [-6,4,-3,7,-5,2].map((r,i) => '<div class="photo" style="--r:'+r+'deg;--delay:'+i*1.4+'s">'+picture('island-'+(i+1),'海岛回忆 '+(i+1))+'</div>').join('')+'</div>';
-    case 9: return title('在游戏里') + '<div class="stats">' + [['你把我救起','608'],['我把你救起','778'],['我为你还击','532'],['你为我还击','349'],['我把你复活','387'],['你把我复活','385']].map(([label,n]) => para(label+'<strong>'+n+'</strong>次')).join('')+'</div>';
+    case 9:
+      if (!reportOpen) return title('海岛战报总结') + '<button id="show-report" class="secondary">请点击屏幕</button>';
+      return title('海岛战报总结') + '<div class="stats">' + [['你把我救起','608'],['我把你救起','778'],['我为你还击','532'],['你为我还击','349'],['我把你复活','387'],['你把我复活','385']].map(([label,n]) => para(label+'<strong>'+n+'</strong>次')).join('')+'</div>';
     case 10: return title('我们还一次灭队了'+number('83')+'次！') + para('我们就是世界上正数第一有默契的搭子！');
     case 11: return title('距离我们上一次见面，') + para('已经'+number('96')+'天了。') + '<div class="snapshot">'+picture('reunion','我们的合照')+'</div>' + para('好怀念我们一起吃烤匠，好怀念我们一起去洗浴中心玩双人成行！');
     case 12: return para('而距离我们相见只剩下'+number('17')+'天了！') + title('你有没有想我呢？') + '<div class="choices"><button class="primary" id="yes">想你了</button><button class="secondary" id="no">还好吧，不想</button></div><p class="msg" id="message" role="status"></p>';
@@ -50,7 +53,7 @@ function content() {
   }
 }
 function allowed() {
-  return ![3,5,12,14].includes(current) && (current !== 13 || (wishSent && animationDone));
+  return (current !== 9 || reportOpen) && ![3,5,12,14].includes(current) && (current !== 13 || (wishSent && animationDone));
 }
 function advance() {
   if (allowed()) go(current === 6 ? 8 : current + 1);
@@ -69,6 +72,7 @@ function bindForm(action            ) {
 function render(focus = true) {
   clearTimeout(animationTimer);
   document.querySelector('.confetti')?.remove();
+  reportOpen = false;
   page.innerHTML = content();
   main.scrollTop = 0;
   element('folio').textContent = String(current).padStart(2,'0') + ' / 14';
@@ -139,6 +143,15 @@ function render(focus = true) {
     }
   }
 }
+element('book').addEventListener('click', e => {
+  if (current !== 9 || reportOpen) return;
+  const target = e.target;
+  if (!(target instanceof Element) || target.closest('#back, #next')) return;
+  reportOpen = true;
+  page.innerHTML = content();
+  page.focus({preventScroll:true});
+  next.hidden = false;
+});
 next.onclick = () => {
   if (current === 14) { historyPages = []; current = 1; render(); } else advance();
 };
