@@ -12,16 +12,18 @@ let activity = '';
 let wins = '';
 let wish = '';
 let wishSent = false;
-let reportOpen = false;
+let reportIndex = 0;
 let animationDone = false;
 let animationTimer = 0;
+const reportStats = [['你把我救起','608'],['我把你救起','778'],['我为你还击','532'],['你为我还击','349'],['我把你复活','387'],['你把我复活','385']];
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const wishKey = 'xixi-birthday-wish-v1';
 try { wish = localStorage.getItem(wishKey) || ''; } catch {}
 const number = (s: string) => '<b class="num">' + s + '</b>';
 const title = (s: string) => '<h2>' + s + '</h2>';
 const para = (s: string) => '<p>' + s + '</p>';
-function delayed(lines: string[]) {
-  return lines.map((line,i) => '<div class="reveal" style="--delay:' + (0.45 * i) + 's">' + line + '</div>').join('');
+function delayed(lines: string[], start = 0) {
+  return lines.map((line,i) => '<div class="reveal" style="--delay:' + (0.5 * (i + start)) + 's">' + line + '</div>').join('');
 }
 function form(content: string, button = '确定') {
   return '<form id="answer">' + content + '<button class="primary">' + button + '</button><span id="message" class="msg" role="status"></span></form>';
@@ -34,26 +36,24 @@ function tree(withLetter = false) {
 }
 function content() {
   switch (current) {
-    case 1: return '<div class="cover"><p class="salute">亲爱的奚曦：</p><h1>祝你20岁生日快乐</h1><div class="cake" role="img" aria-label="点着二十岁蜡烛的草莓生日蛋糕"><div class="plate"></div><div class="layer"></div><div class="icing"></div><i class="berry"></i><i class="berry b"></i><span class="candle">20</span><i class="spark">✧</i><i class="spark r">✧</i></div></div>';
+    case 1: return '<div class="cover">' + delayed([para('亲爱的奚曦：').replace('<p','<p class="salute"'), '<h1>祝你20岁生日快乐</h1>', '<div class="cake" role="img" aria-label="点着二十岁蜡烛的草莓生日蛋糕"><div class="plate"></div><div class="layer"></div><div class="icing"></div><i class="berry"></i><i class="berry b"></i><span class="candle">20</span><i class="spark">✧</i><i class="spark r">✧</i></div>']) + '</div>';
     case 2: return delayed([para('我们在'), title(number('2019') + '年，' + number('9') + '月' + number('10') + '日认识彼此，'), para('陪伴彼此走过了' + number('2637') + '天。'), para('第一次认识的时候，我们还在一起踢足球！')]);
-    case 3: return delayed([title('我们在一起做的最多的事情：'), para('你猜猜会是什么呢？'), para('相信你都不用猜吧哈哈哈哈') + form('<input id="activity" aria-label="我们最常做的事" required placeholder="写下你的答案">')]);
-    case 4: return ['玩和平精英','和平精英','吃鸡'].includes(activity.trim()) ? title('猜对了！那就是打和平精英！') + para('我们在和平精英里：') : title('哈哈，其实我觉得我们做过最多的事情是玩和平精英！');
-    case 5: return title('在和平精英里') + para('我们2020年8月9日成为了游戏好友：') + para('一共组队了 ' + number('2340') + ' 次，') + para('猜猜我们一共吃鸡了多少次？') + form('<input id="wins" inputmode="decimal" aria-label="吃鸡次数" placeholder="输入次数">');
-    case 6: return title('哇塞，这都可以猜对吗？') + para('对！我们吃鸡了' + number('385') + '次！');
-    case 7: return title('哈哈，猜的很接近了，') + para('我们吃鸡了' + number('385') + '次！');
-    case 8: return title('每一次吃鸡，我们都在海岛不同的地方，') + para('每一个地方都有不同的回忆！') + '<div class="photos">' + [-6,4,-3,7,-5,2].map((r,i) => '<div class="photo" style="--r:'+r+'deg;--delay:'+i*1.4+'s">'+picture('island-'+(i+1),'海岛回忆 '+(i+1))+'</div>').join('')+'</div>';
-    case 9:
-      if (!reportOpen) return title('海岛战报总结') + '<button id="show-report" class="secondary">请点击屏幕</button>';
-      return title('海岛战报总结') + '<div class="stats">' + [['你把我救起','608'],['我把你救起','778'],['我为你还击','532'],['你为我还击','349'],['我把你复活','387'],['你把我复活','385']].map(([label,n]) => para(label+'<strong>'+n+'</strong>次')).join('')+'</div>';
-    case 10: return title('我们还一次灭队了'+number('83')+'次！') + para('我们就是世界上正数第一有默契的搭子！');
-    case 11: return title('距离我们上一次见面，') + para('已经'+number('96')+'天了。') + '<div class="snapshot">'+picture('reunion','我们的合照')+'</div>' + para('好怀念我们一起吃烤匠，好怀念我们一起去洗浴中心玩双人成行！');
-    case 12: return para('而距离我们相见只剩下'+number('17')+'天了！') + title('你有没有想我呢？') + '<div class="choices"><button class="primary" id="yes">想你了</button><button class="secondary" id="no">还好吧，不想</button></div><p class="msg" id="message" role="status"></p>';
-    case 13: return title('那我们要一起做什么呢？') + (wishSent ? tree(true) : form('<textarea id="wish" required placeholder="把想一起做的事写进信里……" aria-label="想一起做的事"></textarea>','把信挂上圣诞树'));
-    default: return tree(true) + title('我们圣诞节见！') + '<p class="finish">Merry Christmas, Xixi</p><a id="share" hidden target="_blank" rel="noopener">把心愿分享给我 ↗</a>';
+    case 3: return delayed([title('我们在一起做的最多的事情：'), para('你猜猜会是什么呢？'), para('相信你都不用猜吧哈哈哈哈'), form('<input id="activity" aria-label="我们最常做的事" required placeholder="写下你的答案">')]);
+    case 4: return delayed(['玩和平精英','和平精英','吃鸡'].includes(activity.trim()) ? [title('猜对了！那就是打和平精英！'), para('我们在和平精英里：')] : [title('哈哈，其实我觉得我们做过最多的事情是玩和平精英！')]);
+    case 5: return delayed([title('在和平精英里'), para('我们2020年8月9日成为了游戏好友：'), para('一共组队了 ' + number('2340') + ' 次，'), para('猜猜我们一共吃鸡了多少次？'), form('<input id="wins" inputmode="decimal" aria-label="吃鸡次数" placeholder="输入次数">')]);
+    case 6: return delayed([title('哇塞，这都可以猜对吗？'), para('对！我们吃鸡了' + number('385') + '次！')]);
+    case 7: return delayed([title('哈哈，猜的很接近了，'), para('我们吃鸡了' + number('385') + '次！')]);
+    case 8: return delayed([title('每一次吃鸡，我们都在海岛不同的地方，'), para('每一个地方都有不同的回忆！'), '<div class="photos">' + [-6,4,-3,7,-5,2].map((r,i) => '<div class="photo" style="--r:'+r+'deg;--delay:'+i*1.4+'s">'+picture('island-'+(i+1),'海岛回忆 '+(i+1))+'</div>').join('')+'</div>']);
+    case 9: return delayed([title('海岛战报总结'), para('每点击一次屏幕，揭晓一条我们的默契记录。')]) + '<div id="report-stats" class="stats-stream" aria-live="polite"></div>' + delayed(['<button id="show-report" class="secondary report-prompt">点一下 · 揭晓第一项</button>'], 2);
+    case 10: return delayed([title('我们还一次灭队了'+number('83')+'次！'), para('我们就是世界上正数第一有默契的搭子！')]);
+    case 11: return delayed([title('距离我们上一次见面，'), para('已经'+number('96')+'天了。'), '<div class="snapshot">'+picture('reunion','我们的合照')+'</div>', para('好怀念我们一起吃烤匠，好怀念我们一起去洗浴中心玩双人成行！')]);
+    case 12: return delayed([para('而距离我们相见只剩下'+number('17')+'天了！'), title('你有没有想我呢？'), '<div class="choices"><button class="primary" id="yes">想你了</button><button class="secondary" id="no">还好吧，不想</button></div>', '<p class="msg" id="message" role="status"></p>']);
+    case 13: return delayed([title('那我们要一起做什么呢？'), wishSent ? tree(true) : form('<textarea id="wish" required placeholder="把想一起做的事写进信里……" aria-label="想一起做的事"></textarea>','把信挂上圣诞树')]);
+    default: return delayed([tree(true), title('我们圣诞节见！'), '<p class="finish">Merry Christmas, Xixi</p>', '<a id="share" hidden target="_blank" rel="noopener">把心愿分享给我 ↗</a>']);
   }
 }
 function allowed() {
-  return (current !== 9 || reportOpen) && ![3,5,12,14].includes(current) && (current !== 13 || (wishSent && animationDone));
+  return (current !== 9 || reportIndex === reportStats.length) && ![3,5,12,14].includes(current) && (current !== 13 || (wishSent && animationDone));
 }
 function advance() {
   if (allowed()) go(current === 6 ? 8 : current + 1);
@@ -61,18 +61,59 @@ function advance() {
 function go(n: number) {
   historyPages.push(current);
   current = n;
+  if (current === 9) reportIndex = 0;
   render();
 }
 function previous() {
-  if (historyPages.length) { current = historyPages.pop()!; render(); }
+  if (historyPages.length) { current = historyPages.pop()!; if (current === 9) reportIndex = 0; render(); }
 }
 function bindForm(action: () => void) {
-  element('answer').onsubmit = e => { e.preventDefault(); action(); };
+  const answer = element<HTMLFormElement>('answer');
+  answer.onsubmit = e => {
+    e.preventDefault();
+    const submitter = (e as SubmitEvent).submitter;
+    buttonAction(submitter instanceof HTMLButtonElement ? submitter : answer.querySelector('button'), action);
+  };
+}
+function buttonAction(button: HTMLButtonElement | null, action: () => void) {
+  if (!button || button.dataset.animating === 'true') return;
+  if (reducedMotion.matches) { action(); return; }
+  button.dataset.animating = 'true';
+  button.classList.remove('button-pop');
+  void button.offsetWidth;
+  button.classList.add('button-pop');
+  window.setTimeout(() => {
+    delete button.dataset.animating;
+    action();
+  }, 340);
+}
+function revealReportStat() {
+  if (reportIndex >= reportStats.length) return;
+  const [label, n] = reportStats[reportIndex];
+  const card = document.createElement('p');
+  card.className = 'stat-card stat-arrive';
+  const text = document.createElement('span');
+  text.textContent = label;
+  const value = document.createElement('strong');
+  value.textContent = n;
+  const unit = document.createElement('span');
+  unit.className = 'stat-unit';
+  unit.textContent = '次';
+  card.append(text, value, unit);
+  element('report-stats').append(card);
+  reportIndex += 1;
+  const prompt = element<HTMLButtonElement>('show-report');
+  if (reportIndex === reportStats.length) {
+    prompt.textContent = '6 条默契全部揭晓啦';
+    prompt.disabled = true;
+    prompt.classList.add('complete');
+    next.hidden = false;
+  } else {
+    prompt.textContent = '揭晓下一项（' + reportIndex + ' / ' + reportStats.length + '）';
+  }
 }
 function render(focus = true) {
   clearTimeout(animationTimer);
-  document.querySelector('.confetti')?.remove();
-  reportOpen = false;
   page.innerHTML = content();
   main.scrollTop = 0;
   element('folio').textContent = String(current).padStart(2,'0') + ' / 14';
@@ -93,16 +134,6 @@ function render(focus = true) {
     }
     img.src = img.dataset.src!;
   }
-  if (current === 1) {
-    const confetti = document.createElement('div');
-    confetti.className = 'confetti'; confetti.ariaHidden = 'true';
-    for (let i=0;i<42;i++) {
-      const chip = document.createElement('i');
-      chip.style.cssText = 'left:'+Math.random()*100+'%;background:'+['#e69a52','#c76458','#839e7c','#d7af59'][i%4]+';--d:'+Math.random()+'s;--t:'+(2+Math.random()*2)+'s;--x:'+(Math.random()*100-50)+'px';
-      confetti.append(chip);
-    }
-    element('book').prepend(confetti);
-  }
   if (current === 3) {
     const field = element<HTMLInputElement>('activity'); field.value = activity;
     bindForm(() => { activity = field.value.trim(); if (activity) go(4); else element('message').textContent = '写下你的答案吧。'; });
@@ -116,8 +147,8 @@ function render(focus = true) {
     });
   }
   if (current === 12) {
-    element('no').onclick = () => { element('message').textContent = '不行，你必须得想！'; };
-    element('yes').onclick = () => { wishSent = false; animationDone = false; go(13); };
+    element<HTMLButtonElement>('no').onclick = () => buttonAction(element<HTMLButtonElement>('no'), () => { element('message').textContent = '不行，你必须得想！'; });
+    element<HTMLButtonElement>('yes').onclick = () => buttonAction(element<HTMLButtonElement>('yes'), () => { wishSent = false; animationDone = false; go(13); });
   }
   if (current === 13 && !wishSent) {
     const field = element<HTMLTextAreaElement>('wish'); field.value = wish;
@@ -144,18 +175,17 @@ function render(focus = true) {
   }
 }
 element('book').addEventListener('click', e => {
-  if (current !== 9 || reportOpen) return;
+  if (current !== 9 || reportIndex >= reportStats.length) return;
   const target = e.target;
   if (!(target instanceof Element) || target.closest('#back, #next')) return;
-  reportOpen = true;
-  page.innerHTML = content();
-  page.focus({preventScroll:true});
-  next.hidden = false;
+  const prompt = target.closest('#show-report');
+  if (prompt instanceof HTMLButtonElement) buttonAction(prompt, revealReportStat);
+  else revealReportStat();
 });
-next.onclick = () => {
+next.onclick = () => buttonAction(next, () => {
   if (current === 14) { historyPages = []; current = 1; render(); } else advance();
-};
-back.onclick = previous;
+});
+back.onclick = () => buttonAction(back, previous);
 document.addEventListener('keydown', e => {
   if ((e.target as HTMLElement).matches('input,textarea,button,a')) return;
   if (['ArrowDown','PageDown','ArrowUp','PageUp'].includes(e.key)) {
